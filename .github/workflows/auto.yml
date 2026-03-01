@@ -2,7 +2,7 @@ name: Acewin Automation
 
 on:
   schedule:
-    - cron: "0 * * * *"   # Runs every hour
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -10,23 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.13"
 
-      - name: Install dependencies
-        run: |
-          pip install selenium
+      - run: pip install selenium
 
       - name: Install Chrome
         run: |
           sudo apt update
           sudo apt install -y google-chrome-stable
 
-      - name: Run script
-        run: |
-          python acewin_auto.py
+      - name: Run Script
+        env:
+          PHONE: ${{ secrets.PHONE }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+        run: python acewin_auto.py
