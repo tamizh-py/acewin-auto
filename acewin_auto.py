@@ -6,6 +6,13 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 import time
 import os
+import logging
+
+logging.basicConfig(
+    filename="run.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s"
+)
 
 # Configure headless Chrome
 options = Options()
@@ -74,4 +81,5 @@ print("Clicked second button")
 time.sleep(15)
 
 driver.quit()
+
 
