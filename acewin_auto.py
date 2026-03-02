@@ -9,12 +9,20 @@ import os
 import logging
 import requests
 
+# ---------- LOGGING ----------
+logging.basicConfig(
+    filename="run.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# ---------- TELEGRAM FUNCTION ----------
 def send_telegram_message(message):
     token = os.getenv("TELEGRAM_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
     if not token or not chat_id:
-        logging.info("Telegram secrets not set")
+        print("Telegram secrets not set")
         return
 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -24,83 +32,93 @@ def send_telegram_message(message):
     }
 
     try:
-        requests.post(url, data=data)
+        response = requests.post(url, data=data, timeout=10)
+        print("Telegram status:", response.status_code)
+        print("Telegram response:", response.text)
     except Exception as e:
-        logging.error(f"Telegram send failed: {e}")
+        print("Telegram send failed:", e)
 
-logging.basicConfig(
-    filename="run.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(message)s"
-)
 
-# Configure headless Chrome
-options = Options()
-options.add_argument("--headless=new")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
+driver = None
 
-# Open browser
-driver = webdriver.Chrome(options=options)
-wait = WebDriverWait(driver, 20)
-
-# Open website
-driver.get("https://www.acewin.in/login")
-
-# -------- LOGIN SECTION --------
-wait.until(EC.presence_of_element_located((By.ID, "phone")))
-
-USERNAME = os.getenv("PHONE")
-PASSWORD = os.getenv("PASSWORD")
-
-driver.find_element(By.ID, "phone").send_keys(USERNAME)
-driver.find_element(By.ID, "password").send_keys(PASSWORD)
-# Click login using fresh locate + JS
-wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit']")))
-driver.execute_script(
-    "arguments[0].click();",
-    driver.find_element(By.XPATH, "//button[@type='submit']")
-)
-
-print("Login clicked")
-
-# Wait for page load
-time.sleep(4)
-
-# -------- CLOSE POPUP BY CLICKING OVERLAY --------
 try:
-    actions = ActionChains(driver)
-    actions.move_by_offset(10, 10).click().perform()
-    print("Popup closed")
-    time.sleep(2)
-except:
-    print("Popup not present")
+    logging.info("Script started")
 
-# -------- CLICK FIRST BUTTON --------
-first_button = wait.until(
-    EC.element_to_be_clickable(
-        (By.XPATH, '//*[@id="root"]/div/div/div[1]/div[2]/div/div[2]/a[3]/div')
+    # ---------- HEADLESS SETUP ----------
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+
+    driver = webdriver.Chrome(options=options)
+    wait = WebDriverWait(driver, 20)
+
+    # ---------- OPEN WEBSITE ----------
+    driver.get("https://www.acewin.in/login")
+
+    # ---------- LOGIN ----------
+    wait.until(EC.presence_of_element_located((By.ID, "phone")))
+
+    USERNAME = os.getenv("PHONE")
+    PASSWORD = os.getenv("PASSWORD")
+
+    if not USERNAME or not PASSWORD:
+        raise Exception("PHONE or PASSWORD not set in secrets")
+
+    driver.find_element(By.ID, "phone").send_keys(USERNAME)
+    driver.find_element(By.ID, "password").send_keys(PASSWORD)
+
+    wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit']")))
+    driver.execute_script(
+        "arguments[0].click();",
+        driver.find_element(By.XPATH, "//button[@type='submit']")
     )
-)
 
-driver.execute_script("arguments[0].click();", first_button)
-print("Clicked Hourly spin button")
+    print("Login clicked")
+    time.sleep(4)
 
-time.sleep(3)
+    # ---------- CLOSE POPUP ----------
+    try:
+        actions = ActionChains(driver)
+        actions.move_by_offset(10, 10).click().perform()
+        print("Popup closed")
+        time.sleep(2)
+    except:
+        print("Popup not present")
 
-# -------- CLICK SECOND BUTTON --------
-second_button = wait.until(
-    EC.element_to_be_clickable(
-        (By.XPATH, '//*[@id="root"]/div/div/div[1]/section[1]/div/div[2]/div/div[17]/div/div/div[2]/button')
+    # ---------- CLICK FIRST BUTTON ----------
+    first_button = wait.until(
+        EC.element_to_be_clickable(
+            (By.XPATH, '//*[@id="root"]/div/div/div[1]/div[2]/div/div[2]/a[3]/div')
+        )
     )
-)
+    driver.execute_script("arguments[0].click();", first_button)
+    print("Clicked Hourly spin button")
 
-driver.execute_script("arguments[0].click();", second_button)
-print("Clicked second button")
+    time.sleep(3)
 
-time.sleep(15)
+    # ---------- CLICK SECOND BUTTON ----------
+    second_button = wait.until(
+        EC.element_to_be_clickable(
+            (By.XPATH, '//*[@id="root"]/div/div/div[1]/section[1]/div/div[2]/div/div[17]/div/div/div[2]/button')
+        )
+    )
+    driver.execute_script("arguments[0].click();", second_button)
+    print("Clicked second button")
 
-driver.quit()
+    time.sleep(10)
 
+    # ---------- SUCCESS ----------
+    send_telegram_message("✅ Acewin automation completed successfully")
+    logging.info("Script completed successfully")
 
+except Exception as e:
+    error_msg = f"❌ Acewin automation failed: {e}"
+    print(error_msg)
+    logging.error(error_msg)
+    send_telegram_message(error_msg)
 
+finally:
+    if driver:
+        driver.quit()
+        logging.info("Browser closed")
