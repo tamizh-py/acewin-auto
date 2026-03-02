@@ -7,6 +7,26 @@ from selenium.webdriver.chrome.options import Options
 import time
 import os
 import logging
+import requests
+
+def send_telegram_message(message):
+    token = os.getenv("TELEGRAM_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    if not token or not chat_id:
+        logging.info("Telegram secrets not set")
+        return
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": message
+    }
+
+    try:
+        requests.post(url, data=data)
+    except Exception as e:
+        logging.error(f"Telegram send failed: {e}")
 
 logging.basicConfig(
     filename="run.log",
@@ -81,5 +101,6 @@ print("Clicked second button")
 time.sleep(15)
 
 driver.quit()
+
 
 
