@@ -89,7 +89,7 @@ try:
     # ---------- CLICK FIRST BUTTON ----------
     first_button = wait.until(
         EC.element_to_be_clickable(
-            (By.XPATH, '//*[@id="root"]/div/div/div[1]/div[2]/div/div[2]/a[3]/div')
+            (By.XPATH, '//*[@id="root"]/div/div/div[1]/div[2]/div/div[2]/a/span')
         )
     )
     driver.execute_script("arguments[0].click();", first_button)
@@ -100,7 +100,7 @@ try:
     # ---------- CLICK SECOND BUTTON ----------
     second_button = wait.until(
         EC.element_to_be_clickable(
-            (By.XPATH, '//*[@id="root"]/div/div/div[1]/section[1]/div/div[2]/div/div[17]/div/div/div[2]/button')
+            (By.XPATH, '//*[@id="root"]/div/div/div[1]/section[1]/div/div[2]/div/div[17]/div/div/div[2]/button/span[1]')
         )
     )
     driver.execute_script("arguments[0].click();", second_button)
